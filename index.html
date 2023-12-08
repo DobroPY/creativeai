@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css"
+    />
+    <title>Collage Generator</title>
+  </head>
+  <body>
+    <nav class="container-fluid">
+      <ul>
+        <li><strong>Collage Generator</strong></li>
+      </ul>
+      <ul>
+        <li><a href="#">Home</a></li>
+        <li><a href="#" role="button">About</a></li>
+      </ul>
+    </nav>
+    <main class="container">
+      <div class="grid">
+        <section>
+          <hgroup>
+            <h2>Welcome to the Collage Generator</h2>
+            <h3>Create your custom advertisement collage</h3>
+          </hgroup>
+          <form id="collageForm">
+            <label for="basePrompt">Base Prompt</label>
+            <input type="text" id="basePrompt" name="basePrompt" required />
+
+            <label for="scenes">Number of Scenes</label>
+            <input type="number" id="scenes" name="scenes" required />
+
+            <button type="submit">Generate Collage</button>
+          </form>
+          <div id="collageResult">
+            <div id="scenarioDisplay"><div></div></div>
+            <!-- Div pentru afișarea scenariului -->
+            <div id="imagesDisplay"><div></div></div>
+            <!-- Div pentru afișarea imaginilor -->
+          </div>
+        </section>
+      </div>
+    </main>
+    <footer class="container">
+      <small
+        ><a href="#">Terms of Service</a> •
+        <a href="#">Privacy Policy</a></small
+      >
+    </footer>
+    <script>
+      document
+        .getElementById("collageForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          const basePrompt = document.getElementById("basePrompt").value;
+          const scenes = document.getElementById("scenes").value;
+          const collageResult = document.getElementById("collageResult");
+          const scenarioDisplay = document.getElementById("scenarioDisplay");
+          const imagesDisplay = document.getElementById("imagesDisplay");
+
+          collageResult.innerHTML =
+            "<p>Generating scenario and collage... Please wait.</p>";
+          collageResult.scrollIntoView({ behavior: "smooth" });
+
+          fetch("/generate-collage", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ base_prompt: basePrompt, scenes: scenes }),
+          })
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error("Server responded with an error");
+              }
+              return response.json();
+            })
+            .then((data) => {
+              if (data.error) {
+                throw new Error(data.error);
+              }
+
+              collageResult.innerHTML += `</br><p>Generated Scenario: ${data.scenario.join(
+                "<br><br>"
+              )}</p>`;
+              collageResult.scrollIntoView({ behavior: "smooth" });
+
+              if (data.images && data.images.length > 0) {
+                data.images.forEach((imageData) => {
+                  const img = document.createElement("img");
+                  img.src = `data:image/jpeg;base64,${imageData}`;
+                  collageResult.appendChild(img);
+
+                  const downloadButton = document.createElement("a");
+                  downloadButton.innerText = "Download Image";
+                  downloadButton.href = `data:image/jpeg;base64,${imageData}`;
+                  downloadButton.download = "collage.jpg";
+                  collageResult.appendChild(downloadButton);
+                });
+
+                collageResult.scrollIntoView({ behavior: "smooth" });
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              collageResult.innerHTML = `<p>Error: ${error.message}</p>`;
+            });
+        });
+    </script>
+  </body>
+</html>
